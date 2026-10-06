@@ -1,22 +1,43 @@
-# Règles Spectral — baseline équipe (main)
-# Étendu progressivement dans day1/spectral-rules
+# Règles Spectral — équipe Clevory (day1/spectral-rules)
+# CI bloque la PR si severity = error
 
 extends:
   - spectral:oas
 
 rules:
-  # --- Erreurs bloquantes (CI fail) ---
+  # ========== ERREURS BLOQUANTES ==========
   operation-operationId: error
   operation-operationId-unique: error
   path-params: error
-  no-$ref-siblings: error
+  no-\$ref-siblings: error
   oas3-schema: error
-  oas3-valid-media-example: warn
   operation-success-response: error
+  operation-operationId-valid-in-url: error
 
-  # --- Warnings (à traiter) ---
+  # Paths doivent être en kebab-case
+  path-kebab-case:
+    description: Les segments de path doivent être en kebab-case
+    severity: error
+    given: "\$.paths[*]~"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^(\\/([a-z0-9\\-]+|{[a-zA-Z0-9]+}))+\$"
+
+  # operationId en camelCase
+  operation-id-camel-case:
+    description: operationId doit être en camelCase
+    severity: error
+    given: "\$.paths[*][get,post,put,patch,delete].operationId"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^[a-z][a-zA-Z0-9]*\$"
+
+  # ========== WARNINGS ==========
   operation-description: warn
   operation-tag-defined: warn
   info-contact: warn
   info-description: warn
+  oas3-valid-media-example: warn
   tag-description: off
