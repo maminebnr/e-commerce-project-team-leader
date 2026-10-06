@@ -19,6 +19,8 @@ import tn.clevory.api.dto.ProductDto;
 import tn.clevory.api.dto.ProductPageDto;
 import tn.clevory.api.service.ProductService;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping("/products")
 @Tag(name = "Products", description = "Opérations sur les produits")
@@ -31,16 +33,24 @@ public class ProductController {
     }
 
     @GetMapping
-    @Operation(summary = "Liste paginée des produits", operationId = "listProducts")
+    @Operation(summary = "Liste paginée et filtrée des produits", operationId = "listProducts")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Page de produits"),
             @ApiResponse(responseCode = "400", description = "Paramètres invalides",
                     content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     })
     public ProductPageDto list(
+            @Parameter(description = "Recherche textuelle sur le nom")
+            @RequestParam(required = false) String q,
+            @Parameter(description = "Filtrer par catégorie")
+            @RequestParam(required = false) Long categoryId,
+            @Parameter(description = "Prix minimum")
+            @RequestParam(required = false) BigDecimal minPrice,
+            @Parameter(description = "Prix maximum")
+            @RequestParam(required = false) BigDecimal maxPrice,
             @Parameter(description = "Pagination Spring Data (page, size, sort)")
             @PageableDefault(size = 20) Pageable pageable) {
-        return service.list(pageable);
+        return service.list(q, categoryId, minPrice, maxPrice, pageable);
     }
 
     @GetMapping("/{id}")
