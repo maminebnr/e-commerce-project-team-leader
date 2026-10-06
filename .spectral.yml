@@ -1,0 +1,22 @@
+# Règles Spectral — baseline équipe (main)
+# Étendu progressivement dans day1/spectral-rules
+
+extends:
+  - spectral:oas
+
+rules:
+  # --- Erreurs bloquantes (CI fail) ---
+  operation-operationId: error
+  operation-operationId-unique: error
+  path-params: error
+  no-$ref-siblings: error
+  oas3-schema: error
+  oas3-valid-media-example: warn
+  operation-success-response: error
+
+  # --- Warnings (à traiter) ---
+  operation-description: warn
+  operation-tag-defined: warn
+  info-contact: warn
+  info-description: warn
+  tag-description: off

@@ -1,0 +1,39 @@
+name: OpenAPI Spectral Lint
+
+on:
+  push:
+    branches: [ main, 'day*/**' ]
+    paths:
+      - 'openapi/**'
+      - '.spectral/**'
+      - '.spectral.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'openapi/**'
+      - '.spectral/**'
+      - '.spectral.yml'
+
+jobs:
+  spectral:
+    name: Lint OpenAPI with Spectral
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Spectral
+        run: npm install -g @stoplight/spectral-cli
+
+      - name: Run Spectral
+        run: |
+          if [ -f .spectral.yml ]; then
+            spectral lint openapi/**/*.yaml --ruleset .spectral.yml --fail-severity error
+          else
+            spectral lint openapi/**/*.yaml --fail-severity error
+          fi
