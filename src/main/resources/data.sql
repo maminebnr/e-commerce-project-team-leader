@@ -1,10 +1,8 @@
--- Catégories
 INSERT INTO categories (name, description) VALUES
 ('Smartphones', 'Téléphones mobiles'),
 ('Laptops', 'Ordinateurs portables'),
 ('Audio', 'Écouteurs et enceintes');
 
--- Produits
 INSERT INTO products (name, price, description, category_id, category_name, created_at) VALUES
 ('iPhone 16 Pro', 1229.00, 'Smartphone Apple 256 Go Titanium', 1, 'Smartphones', CURRENT_TIMESTAMP),
 ('Samsung Galaxy S25', 1099.00, 'Flagship Android 512 Go', 1, 'Smartphones', CURRENT_TIMESTAMP),
