@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Spring Boot — api-training-ecommerce",
+      "request": "launch",
+      "mainClass": "tn.clevory.api.ApiTrainingEcommerceApplication",
+      "projectName": "api-training-ecommerce",
+      "args": "",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}
