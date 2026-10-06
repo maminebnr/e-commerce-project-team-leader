@@ -14,9 +14,14 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+    defer-datasource-initialization: true
     properties:
       hibernate:
         format_sql: true
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:data.sql
   jackson:
     default-property-inclusion: non_null
     serialization:
@@ -27,7 +32,6 @@ server:
   error:
     include-message: always
 
-# Springdoc OpenAPI
 springdoc:
   api-docs:
     path: /v3/api-docs

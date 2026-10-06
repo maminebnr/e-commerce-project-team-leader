@@ -1,0 +1,272 @@
+openapi: 3.0.3
+info:
+  title: E-commerce Products API
+  description: |
+    API de gestion des produits — Formation Clevory J1.
+    Contrat API-First : ce fichier est la source de vérité.
+  version: 1.0.0
+  contact:
+    name: Clevory Training
+    email: contact@clevory.tn
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:8080
+    description: Local Spring Boot
+  - url: http://localhost:4010
+    description: Prism mock
+
+tags:
+  - name: Products
+    description: Opérations sur les produits
+
+paths:
+  /products:
+    get:
+      tags: [Products]
+      operationId: listProducts
+      summary: Liste paginée des produits
+      description: Retourne une page de produits avec pagination Spring Data.
+      parameters:
+        - name: page
+          in: query
+          description: Numéro de page (0-based)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          description: Taille de page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sort
+          in: query
+          description: Critère de tri (ex. price,desc)
+          schema:
+            type: string
+            example: name,asc
+      responses:
+        '200':
+          description: Page de produits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPage'
+        '400':
+          description: Paramètres invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    post:
+      tags: [Products]
+      operationId: createProduct
+      summary: Créer un produit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+            examples:
+              smartphone:
+                summary: Exemple smartphone
+                value:
+                  name: iPhone 16 Pro
+                  price: 1229.00
+                  categoryId: 1
+                  description: Smartphone Apple 256 Go
+      responses:
+        '201':
+          description: Produit créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDto'
+        '400':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /products/{id}:
+    get:
+      tags: [Products]
+      operationId: getProduct
+      summary: Détail d'un produit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Identifiant du produit
+      responses:
+        '200':
+          description: Produit trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDto'
+        '404':
+          description: Produit introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    put:
+      tags: [Products]
+      operationId: updateProduct
+      summary: Mettre à jour un produit (remplacement complet)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '200':
+          description: Produit mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDto'
+        '404':
+          description: Produit introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    delete:
+      tags: [Products]
+      operationId: deleteProduct
+      summary: Supprimer un produit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Produit supprimé
+        '404':
+          description: Produit introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+components:
+  schemas:
+    ProductDto:
+      type: object
+      required: [id, name, price]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 42
+        name:
+          type: string
+          maxLength: 120
+          example: iPhone 16 Pro
+        price:
+          type: number
+          format: double
+          minimum: 0
+          example: 1229.00
+        description:
+          type: string
+          maxLength: 2000
+          example: Smartphone Apple 256 Go
+        categoryId:
+          type: integer
+          format: int64
+          example: 1
+        categoryName:
+          type: string
+          example: Smartphones
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateProductRequest:
+      type: object
+      required: [name, price, categoryId]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+          example: iPhone 16 Pro
+        price:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+          example: 1229.00
+        categoryId:
+          type: integer
+          format: int64
+          example: 1
+        description:
+          type: string
+          maxLength: 2000
+
+    ProductPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductDto'
+        page:
+          type: integer
+          example: 0
+        size:
+          type: integer
+          example: 20
+        totalElements:
+          type: integer
+          format: int64
+          example: 150
+        totalPages:
+          type: integer
+          example: 8
+
+    ProblemDetail:
+      type: object
+      description: RFC 7807 Problem Details
+      properties:
+        type:
+          type: string
+          format: uri
+          example: https://api.clevory.tn/errors/not-found
+        title:
+          type: string
+          example: Not Found
+        status:
+          type: integer
+          example: 404
+        detail:
+          type: string
+          example: Product with id 42 not found
+        instance:
+          type: string
+          format: uri
+          example: /products/42
