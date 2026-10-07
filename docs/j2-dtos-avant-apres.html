@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>J2 — DTOs avant / après</title>
+<style>
+  @page { size: A4; margin: 12mm 12mm 14mm 12mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    color: #1c2430;
+    font-family: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.35;
+  }
+  h1 { font-size: 18pt; margin: 0 0 4px; }
+  h2 {
+    font-size: 13pt;
+    margin: 14px 0 4px;
+    padding-top: 8px;
+    border-top: 2px solid #1f4e79;
+    page-break-after: avoid;
+  }
+  p { margin: 0 0 6px; }
+  .lead { color: #415066; }
+  .file {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 8.5pt;
+    color: #1f4e79;
+    margin: 0 0 6px;
+  }
+  .label {
+    display: inline-block;
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    margin: 8px 0 3px;
+  }
+  .avant { background: #fde8e4; color: #8a2b1b; }
+  .apres { background: #e5f4ea; color: #146c36; }
+  pre {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 7.7pt;
+    line-height: 1.35;
+    background: #f6f8fb;
+    padding: 7px 8px;
+    margin: 0 0 6px;
+    white-space: pre-wrap;
+    page-break-inside: avoid;
+  }
+  pre.old { border-left: 3px solid #c4523a; }
+  pre.new { border-left: 3px solid #2d8a4e; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 8px; font-size: 9pt; }
+  th, td { border: 1px solid #d5dde6; padding: 4px 6px; text-align: left; vertical-align: top; }
+  th { background: #1f4e79; color: white; }
+</style>
+</head>
+<body>
+
+<h1>J2 — DTOs : avant / après</h1>
+<p class="lead">Branche <code>day2/dtos-mapstruct</code>. On remplace les classes par des records, et le mapping manuel par MapStruct. Bean Validation reste sur la requête.</p>
+
+<table>
+  <tr><th>Fichier</th><th>Changement</th></tr>
+  <tr><td><code>dto/ProductDto.java</code></td><td>classe → record</td></tr>
+  <tr><td><code>dto/CreateProductRequest.java</code></td><td>classe → record, mêmes annotations</td></tr>
+  <tr><td><code>dto/ProductPageDto.java</code></td><td>classe → record</td></tr>
+  <tr><td><code>mapper/ProductMapper.java</code></td><td>fichier nouveau</td></tr>
+  <tr><td><code>service/ProductService.java</code></td><td>le service appelle le mapper</td></tr>
+</table>
+<p>Un record n'a pas de setters. On lit un champ avec <code>request.categoryId()</code>, plus <code>request.getCategoryId()</code>. Le JSON ne change pas : Jackson écrit toujours <code>"categoryId"</code>.</p>
+
+<h2>1. ProductDto</h2>
+<p class="file">src/main/java/tn/clevory/api/dto/ProductDto.java</p>
+<p>DTO de sortie. Avant : 7 champs, un constructeur, 14 getters/setters. Après : la liste des champs suffit. Le record est immuable.</p>
+<div class="label avant">Avant</div>
+<pre class="old">public class ProductDto {
+
+    private Long id;
+    private String name;
+    private BigDecimal price;
+    private String description;
+    private Long categoryId;
+    private String categoryName;
+    private Instant createdAt;
+
+    public ProductDto() {}
+
+    public ProductDto(Long id, String name, BigDecimal price, String description,
+                      Long categoryId, String categoryName, Instant createdAt) {
+        this.id = id;
+        this.name = name;
+        this.price = price;
+        this.description = description;
+        this.categoryId = categoryId;
+        this.categoryName = categoryName;
+        this.createdAt = createdAt;
+    }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    public Long getCategoryId() { return categoryId; }
+    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
+    public String getCategoryName() { return categoryName; }
+    public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+}</pre>
+<div class="label apres">Après</div>
+<pre class="new">public record ProductDto(
+        Long id,
+        String name,
+        BigDecimal price,
+        String description,
+        Long categoryId,
+        String categoryName,
+        Instant createdAt
+) {}</pre>
+
+<h2>2. CreateProductRequest</h2>
+<p class="file">src/main/java/tn/clevory/api/dto/CreateProductRequest.java</p>
+<p>DTO d'entrée. Les annotations ne bougent pas : elles passent sur les composants du record. <code>@Valid</code> dans le contrôleur continue de les déclencher.</p>
+<div class="label avant">Avant</div>
+<pre class="old">public class CreateProductRequest {
+
+    @NotBlank(message = "Le nom est obligatoire")
+    @Size(min = 2, max = 120, message = "Le nom doit contenir entre 2 et 120 caractères")
+    private String name;
+
+    @NotNull(message = "Le prix est obligatoire")
+    @Positive(message = "Le prix doit être strictement positif")
+    @Digits(integer = 10, fraction = 2)
+    private BigDecimal price;
+
+    @NotNull(message = "La catégorie est obligatoire")
+    private Long categoryId;
+
+    @Size(max = 2000, message = "La description ne peut dépasser 2000 caractères")
+    private String description;
+
+    public CreateProductRequest() {}
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
+    public Long getCategoryId() { return categoryId; }
+    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+}</pre>
+<div class="label apres">Après</div>
+<pre class="new">public record CreateProductRequest(
+        @NotBlank(message = "Le nom est obligatoire")
+        @Size(min = 2, max = 120, message = "Le nom doit contenir entre 2 et 120 caractères")
+        String name,
+
+        @NotNull(message = "Le prix est obligatoire")
+        @Positive(message = "Le prix doit être strictement positif")
+        @Digits(integer = 10, fraction = 2)
+        BigDecimal price,
+
+        @NotNull(message = "La catégorie est obligatoire")
+        Long categoryId,
+
+        @Size(max = 2000, message = "La description ne peut dépasser 2000 caractères")
+        String description
+) {}</pre>
+
+<h2>3. ProductPageDto</h2>
+<p class="file">src/main/java/tn/clevory/api/dto/ProductPageDto.java</p>
+<p>L'enveloppe de pagination. Même cinq champs. On supprime le constructeur vide et les setters : une page ne se modifie pas après création.</p>
+<div class="label avant">Avant</div>
+<pre class="old">public class ProductPageDto {
+
+    private List&lt;ProductDto&gt; content;
+    private int page;
+    private int size;
+    private long totalElements;
+    private int totalPages;
+
+    public ProductPageDto() {}
+
+    public ProductPageDto(List&lt;ProductDto&gt; content, int page, int size,
+                          long totalElements, int totalPages) {
+        this.content = content;
+        this.page = page;
+        this.size = size;
+        this.totalElements = totalElements;
+        this.totalPages = totalPages;
+    }
+
+    public List&lt;ProductDto&gt; getContent() { return content; }
+    public void setContent(List&lt;ProductDto&gt; content) { this.content = content; }
+    public int getPage() { return page; }
+    public void setPage(int page) { this.page = page; }
+    public int getSize() { return size; }
+    public void setSize(int size) { this.size = size; }
+    public long getTotalElements() { return totalElements; }
+    public void setTotalElements(long totalElements) { this.totalElements = totalElements; }
+    public int getTotalPages() { return totalPages; }
+    public void setTotalPages(int totalPages) { this.totalPages = totalPages; }
+}</pre>
+<div class="label apres">Après</div>
+<pre class="new">public record ProductPageDto(
+        List&lt;ProductDto&gt; content,
+        int page,
+        int size,
+        long totalElements,
+        int totalPages
+) {}</pre>
+
+<h2>4. ProductMapper — fichier nouveau</h2>
+<p class="file">src/main/java/tn/clevory/api/mapper/ProductMapper.java</p>
+<p>Avant, ce fichier n'existait pas. Le mapping était une méthode privée <code>toDto</code> dans le service. MapStruct génère l'implémentation à la compilation (<code>@Mapper(componentModel = "spring")</code>), et Spring l'injecte.</p>
+<div class="label avant">Avant</div>
+<pre class="old">Fichier absent.
+Le service copiait les champs à la main.</pre>
+<div class="label apres">Après</div>
+<pre class="new">@Mapper(componentModel = "spring")
+public interface ProductMapper {
+
+    ProductDto toDto(Product entity);
+
+    List&lt;ProductDto&gt; toDtoList(List&lt;Product&gt; entities);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "categoryName", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    Product toEntity(CreateProductRequest request);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "categoryName", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    void updateEntityFromRequest(CreateProductRequest request, @MappingTarget Product entity);
+}</pre>
+<p><code>ignore = true</code> sur <code>id</code>, <code>categoryName</code> et <code>createdAt</code> : ces champs ne viennent pas du body. <code>categoryName</code> est encore rempli par <code>CategoryRepository</code> dans le service.</p>
+
+<h2>5. ProductService</h2>
+<p class="file">src/main/java/tn/clevory/api/service/ProductService.java</p>
+<p>Les filtres et <code>delete</code> ne changent pas. On retire <code>toDto</code>, on injecte le mapper, et <code>getName()</code> devient <code>name()</code>.</p>
+<div class="label avant">Avant — create</div>
+<pre class="old">Product entity = new Product(
+        request.getName(),
+        request.getPrice(),
+        request.getCategoryId(),
+        request.getDescription()
+);
+categoryRepository.findById(request.getCategoryId())
+        .ifPresent(c -&gt; entity.setCategoryName(c.getName()));
+return toDto(repository.save(entity));</pre>
+<div class="label apres">Après — create</div>
+<pre class="new">Product entity = mapper.toEntity(request);
+categoryRepository.findById(request.categoryId())
+        .ifPresent(c -&gt; entity.setCategoryName(c.getName()));
+return mapper.toDto(repository.save(entity));</pre>
+<div class="label avant">Avant — update</div>
+<pre class="old">entity.setName(request.getName());
+entity.setPrice(request.getPrice());
+entity.setCategoryId(request.getCategoryId());
+entity.setDescription(request.getDescription());
+categoryRepository.findById(request.getCategoryId())
+        .ifPresent(c -&gt; entity.setCategoryName(c.getName()));
+return toDto(repository.save(entity));</pre>
+<div class="label apres">Après — update</div>
+<pre class="new">mapper.updateEntityFromRequest(request, entity);
+categoryRepository.findById(request.categoryId())
+        .ifPresent(c -&gt; entity.setCategoryName(c.getName()));
+return mapper.toDto(repository.save(entity));</pre>
+<div class="label avant">Avant — méthode supprimée</div>
+<pre class="old">private ProductDto toDto(Product p) {
+    return new ProductDto(
+            p.getId(), p.getName(), p.getPrice(), p.getDescription(),
+            p.getCategoryId(), p.getCategoryName(), p.getCreatedAt());
+}</pre>
+<div class="label apres">Après — list et getById</div>
+<pre class="new">page.map(mapper::toDto)
+repository.findById(id).map(mapper::toDto)</pre>
+
+</body>
+</html>
