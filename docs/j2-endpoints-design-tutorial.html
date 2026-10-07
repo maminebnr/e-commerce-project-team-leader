@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>J2 — Design des endpoints</title>
+<style>
+  @page { size: A4; margin: 12mm 13mm 14mm 13mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    color: #1c2430;
+    font-family: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.38;
+  }
+  h1 { font-size: 18pt; margin: 0 0 4px; }
+  h2 {
+    font-size: 12pt;
+    margin: 12px 0 4px;
+    padding-top: 6px;
+    border-top: 1.5px solid #1f4e79;
+    page-break-after: avoid;
+  }
+  p { margin: 0 0 6px; }
+  .lead { color: #415066; margin-bottom: 8px; }
+  .file {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 8.4pt;
+    color: #1f4e79;
+    margin: 0 0 4px;
+  }
+  code, pre { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 8pt; }
+  code { background: #f3f6f9; padding: 0 3px; border-radius: 3px; }
+  pre {
+    background: #f4f7fb;
+    border-left: 3px solid #1f4e79;
+    padding: 6px 8px;
+    margin: 4px 0 6px;
+    white-space: pre-wrap;
+    page-break-inside: avoid;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 4px 0 6px; font-size: 9pt; page-break-inside: avoid; }
+  th, td { border: 1px solid #d5dde6; padding: 3px 6px; text-align: left; vertical-align: top; }
+  th { background: #1f4e79; color: white; }
+  .note { font-size: 9.5pt; color: #243044; margin: 2px 0 4px; }
+</style>
+</head>
+<body>
+<h1>J2 — Design des endpoints</h1>
+<p class="lead">Branche <code>day2/endpoints-design</code>, à partir de <code>day1/spectral-rules</code>. Un seul <code>GET /products</code>. Le path est un nom. La page et les filtres sont des query params.</p>
+
+<h2>1. Naming</h2>
+<p class="file">docs/CHEATSHEET-NAMING.md · .spectral.yml</p>
+<table>
+  <tr><th>On écrit</th><th>On n'écrit pas</th></tr>
+  <tr><td><code>/products</code></td><td><code>/product</code>, <code>/getAllProducts</code></td></tr>
+  <tr><td><code>/order-items</code></td><td><code>/orderItems</code></td></tr>
+  <tr><td><code>DELETE /products/42</code></td><td><code>POST /products/delete/42</code></td></tr>
+  <tr><td><code>listProducts</code></td><td><code>list-products</code></td></tr>
+</table>
+<p class="note"><code>path-kebab-case</code> et <code>operation-id-camel-case</code> sont en error. La CI bloque. Le path nomme la ressource, le verbe HTTP porte l'action.</p>
+<pre>spectral lint openapi/**/*.yaml --ruleset .spectral.yml</pre>
+
+<h2>2. Les URLs</h2>
+<p class="file">openapi/products-v1.yaml</p>
+<table>
+  <tr><th>Path</th><th>Verbes</th></tr>
+  <tr><td><code>/products</code></td><td>GET, POST</td></tr>
+  <tr><td><code>/products/{id}</code></td><td>GET, PUT, DELETE</td></tr>
+</table>
+<p class="note">Deux niveaux maximum : <code>/orders/{orderId}/items</code>. Un filtre n'est pas un nouveau path : <code>GET /products?categoryId=1</code>.</p>
+
+<h2>3. Entité Category</h2>
+<p class="file">src/main/java/tn/clevory/api/entity/Category.java</p>
+<pre>@Entity
+@Table(name = "categories")
+public class Category {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    @Column(nullable = false, unique = true, length = 80)
+    private String name;
+    @Column(length = 255)
+    private String description;
+}</pre>
+<p class="note">Remplace le faux nom <code>Category-1</code>. Hibernate crée la table (<code>ddl-auto: update</code>).</p>
+
+<h2>4. CategoryRepository</h2>
+<p class="file">src/main/java/tn/clevory/api/repository/CategoryRepository.java</p>
+<pre>public interface CategoryRepository extends JpaRepository&lt;Category, Long&gt; {}</pre>
+<p class="note"><code>findById</code> est déjà fourni. On n'écrit pas de SQL.</p>
+
+<h2>5. Données de démo</h2>
+<p class="file">src/main/resources/data.sql</p>
+<pre>INSERT INTO categories (name, description) VALUES
+('Smartphones', 'Téléphones mobiles'),
+('Laptops', 'Ordinateurs portables'),
+('Audio', 'Écouteurs et enceintes');</pre>
+<p class="note">Avant les produits. Ids 1, 2, 3. iPhone et Galaxy → 1, MacBook et Dell → 2, AirPods → 3. Chargé par <code>application.yml</code>.</p>
+
+<h2>6. Le vrai nom de catégorie</h2>
+<p class="file">src/main/java/tn/clevory/api/service/ProductService.java — create et update</p>
+<pre>categoryRepository.findById(request.getCategoryId())
+        .ifPresent(c -&gt; entity.setCategoryName(c.getName()));</pre>
+<p class="note">À la place de <code>"Category-" + id</code>. <code>categoryId: 1</code> donne <code>Smartphones</code>. Id inconnu : on ne plante pas.</p>
+
+<h2>7. Pagination</h2>
+<p class="file">ProductController.java · dto/ProductPageDto.java</p>
+<pre>@PageableDefault(size = 20) Pageable pageable</pre>
+<table>
+  <tr><th>URL</th><th>Sens</th><th>Défaut</th></tr>
+  <tr><td><code>page</code></td><td>numéro, commence à 0</td><td>0</td></tr>
+  <tr><td><code>size</code></td><td>taille de la page</td><td>20</td></tr>
+  <tr><td><code>sort</code></td><td><code>price,desc</code></td><td>aucun</td></tr>
+</table>
+<p class="note">Réponse : <code>content</code>, <code>page</code>, <code>size</code>, <code>totalElements</code>, <code>totalPages</code>. 5 produits et <code>size=2</code> → <code>totalPages: 3</code>. Page suivante : <code>page=1</code>.</p>
+
+<h2>8. Filtres</h2>
+<p class="file">ProductController.java — méthode list</p>
+<pre>@RequestParam(required = false) String q,
+@RequestParam(required = false) Long categoryId,
+@RequestParam(required = false) BigDecimal minPrice,
+@RequestParam(required = false) BigDecimal maxPrice,</pre>
+<table>
+  <tr><th>Param</th><th>Effet</th></tr>
+  <tr><td><code>q</code></td><td>le nom contient ce texte</td></tr>
+  <tr><td><code>categoryId</code></td><td>une seule catégorie</td></tr>
+  <tr><td><code>minPrice</code></td><td><code>price &gt;= minPrice</code></td></tr>
+  <tr><td><code>maxPrice</code></td><td><code>price &lt;= maxPrice</code></td></tr>
+</table>
+<p class="note"><code>required = false</code>, sinon <code>GET /products</code> seul répond 400. Les filtres se cumulent avec <code>page</code>, <code>size</code> et <code>sort</code>.</p>
+
+<h2>9. ProductRepository</h2>
+<p class="file">src/main/java/tn/clevory/api/repository/ProductRepository.java</p>
+<pre>public interface ProductRepository
+        extends JpaRepository&lt;Product, Long&gt;, JpaSpecificationExecutor&lt;Product&gt; {}</pre>
+<p class="note"><code>findAll(Specification, Pageable)</code> : WHERE dynamique et page en même temps.</p>
+
+<h2>10. Un prédicat par filtre</h2>
+<p class="file">src/main/java/tn/clevory/api/service/ProductSpecifications.java</p>
+<pre>public static Specification&lt;Product&gt; hasNameContaining(String q) {
+    return (root, query, cb) -&gt; {
+        if (q == null || q.isBlank()) return cb.conjunction();
+        return cb.like(cb.lower(root.get("name")), "%" + q.toLowerCase() + "%");
+    };
+}</pre>
+<p class="note">Paramètre absent → <code>conjunction()</code> → ce filtre ne retire rien.</p>
+<table>
+  <tr><th>Méthode</th><th>SQL</th></tr>
+  <tr><td><code>hasCategoryId</code></td><td><code>category_id = ?</code></td></tr>
+  <tr><td><code>priceGreaterThanOrEqual</code></td><td><code>price &gt;= ?</code></td></tr>
+  <tr><td><code>priceLessThanOrEqual</code></td><td><code>price &lt;= ?</code></td></tr>
+</table>
+
+<h2>11. Assembler la page</h2>
+<p class="file">ProductService.java — méthode list</p>
+<pre>Specification&lt;Product&gt; spec = Specification
+        .where(ProductSpecifications.hasNameContaining(q))
+        .and(ProductSpecifications.hasCategoryId(categoryId))
+        .and(ProductSpecifications.priceGreaterThanOrEqual(minPrice))
+        .and(ProductSpecifications.priceLessThanOrEqual(maxPrice));
+
+Page&lt;Product&gt; page = repository.findAll(spec, pageable);
+
+return new ProductPageDto(
+        page.map(this::toDto).getContent(),
+        page.getNumber(), page.getSize(),
+        page.getTotalElements(), page.getTotalPages());</pre>
+<p class="note">Le WHERE et le LIMIT sont en SQL (<code>show-sql: true</code>).</p>
+
+<h2>12. Vérifier</h2>
+<pre>./mvnw spring-boot:run</pre>
+<table>
+  <tr><th>Appel</th><th>Résultat</th></tr>
+  <tr><td><code>GET /products?size=2</code></td><td>2 produits, totalElements 5, totalPages 3</td></tr>
+  <tr><td><code>GET /products?categoryId=2</code></td><td>MacBook et Dell, categoryName Laptops</td></tr>
+  <tr><td><code>GET /products?q=pro</code></td><td>iPhone 16 Pro et MacBook Pro 14</td></tr>
+  <tr><td><code>GET /products?minPrice=1000&amp;maxPrice=1500&amp;sort=price,asc</code></td><td>Galaxy 1099, iPhone 1229, Dell 1499</td></tr>
+</table>
+<p class="note">Swagger : http://localhost:8080/swagger-ui.html</p>
+</body>
+</html>

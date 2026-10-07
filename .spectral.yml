@@ -6,10 +6,11 @@ extends:
 
 rules:
   # ========== ERREURS BLOQUANTES ==========
+
   operation-operationId: error
   operation-operationId-unique: error
   path-params: error
-  no-\$ref-siblings: error
+  no-$ref-siblings: error
   oas3-schema: error
   operation-success-response: error
   operation-operationId-valid-in-url: error
@@ -18,26 +19,28 @@ rules:
   path-kebab-case:
     description: Les segments de path doivent être en kebab-case
     severity: error
-    given: "\$.paths[*]~"
+    given: "$.paths[*]~"
     then:
       function: pattern
       functionOptions:
-        match: "^(\\/([a-z0-9\\-]+|{[a-zA-Z0-9]+}))+\$"
+        match: "^(/([a-z0-9-]+|\\{[a-zA-Z0-9]+\\}))+$"
 
   # operationId en camelCase
   operation-id-camel-case:
     description: operationId doit être en camelCase
     severity: error
-    given: "\$.paths[*][get,post,put,patch,delete].operationId"
+    given: "$.paths[*][get,post,put,patch,delete].operationId"
     then:
       function: pattern
       functionOptions:
-        match: "^[a-z][a-zA-Z0-9]*\$"
+        match: "^[a-z][a-zA-Z0-9]*$"
 
   # ========== WARNINGS ==========
+
   operation-description: warn
   operation-tag-defined: warn
   info-contact: warn
   info-description: warn
   oas3-valid-media-example: warn
   tag-description: off
+
