@@ -1,9 +1,11 @@
 package tn.clevory.api.config;
 
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,6 +26,12 @@ public class OpenApiConfig {
                                 .name("Clevory Training")
                                 .email("contact@clevory.tn"))
                         .license(new License().name("Proprietary")))
+                .components(new Components().addSecuritySchemes("bearer-jwt",
+                        new SecurityScheme()
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")
+                                .description("JWT émis par le realm ecommerce")))
                 .servers(List.of(
                         new Server().url("http://localhost:8080").description("Local Spring Boot"),
                         new Server().url("http://localhost:4010").description("Prism mock")

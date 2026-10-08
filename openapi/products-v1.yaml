@@ -67,6 +67,8 @@ paths:
       tags: [Products]
       operationId: createProduct
       summary: Créer un produit
+      security:
+        - bearer-jwt: []
       requestBody:
         required: true
         content:
@@ -94,6 +96,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: JWT absent ou invalide
+        '403':
+          description: Scope ou rôle insuffisant
 
   /products/{id}:
     get:
@@ -125,6 +131,8 @@ paths:
       tags: [Products]
       operationId: updateProduct
       summary: Mettre à jour un produit (remplacement complet)
+      security:
+        - bearer-jwt: []
       parameters:
         - name: id
           in: path
@@ -151,10 +159,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: JWT absent ou invalide
+        '403':
+          description: Scope ou rôle insuffisant
     delete:
       tags: [Products]
       operationId: deleteProduct
       summary: Supprimer un produit
+      security:
+        - bearer-jwt: []
       parameters:
         - name: id
           in: path
@@ -171,8 +185,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: JWT absent ou invalide
+        '403':
+          description: Scope ou rôle insuffisant
 
 components:
+  securitySchemes:
+    bearer-jwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT émis par le realm ecommerce. Scope products:write ou rôle ADMIN.
   schemas:
     ProductDto:
       type: object

@@ -13,6 +13,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import tn.clevory.api.dto.CreateProductRequest;
 import tn.clevory.api.dto.ProductDto;
@@ -67,6 +68,7 @@ public class ProductController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('SCOPE_products:write') or hasRole('ADMIN')")
     @Operation(summary = "Créer un produit", operationId = "createProduct")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Produit créé"),
@@ -79,6 +81,7 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('SCOPE_products:write') or hasRole('ADMIN')")
     @Operation(summary = "Mettre à jour un produit", operationId = "updateProduct")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Produit mis à jour"),
@@ -92,6 +95,7 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('SCOPE_products:write') or hasRole('ADMIN')")
     @Operation(summary = "Supprimer un produit", operationId = "deleteProduct")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Produit supprimé"),
