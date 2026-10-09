@@ -22,7 +22,7 @@ tags:
     description: Opérations sur les produits
 
 paths:
-  /products-items:
+  /productItems:
     get:
       tags: [Products]
       operationId: listProducts
