@@ -123,3 +123,13 @@ rules:
             maximum:
               type: integer
               maximum: 100
+
+  # ========== ERREURS AU FORMAT PROBLEMDETAIL ==========
+  errors-problem-json:
+    description: Les réponses 4xx/5xx sont en application/problem+json (spring.mvc.problemdetails.enabled).
+    message: "Réponse d'erreur : le content-type doit être application/problem+json"
+    severity: error
+    given: "$.paths[*][get,post,put,patch,delete].responses[?(@property >= 400)].content"
+    then:
+      field: "application/problem+json"
+      function: truthy

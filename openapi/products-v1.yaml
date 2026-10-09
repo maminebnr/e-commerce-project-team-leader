@@ -60,7 +60,7 @@ paths:
         '400':
           description: Paramètres invalides
           content:
-            application/json:
+            application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
     post:
@@ -92,7 +92,7 @@ paths:
         '400':
           description: Erreur de validation
           content:
-            application/json:
+            application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
 
@@ -120,7 +120,7 @@ paths:
         '404':
           description: Produit introuvable
           content:
-            application/json:
+            application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
     put:
@@ -151,7 +151,7 @@ paths:
         '404':
           description: Produit introuvable
           content:
-            application/json:
+            application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
     delete:
@@ -172,7 +172,7 @@ paths:
         '404':
           description: Produit introuvable
           content:
-            application/json:
+            application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
 
@@ -273,5 +273,5 @@ components:
           example: Product with id 42 not found
         instance:
           type: string
-          format: uri-reference
+          format: uri-ref
           example: products/42
