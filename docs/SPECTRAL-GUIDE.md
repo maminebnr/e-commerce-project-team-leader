@@ -23,10 +23,13 @@ spectral lint openapi/**/*.yaml -f json
 
 | Règle | Severity | Description |
 |-------|----------|-------------|
-| `path-kebab-case` | error | Paths en kebab-case uniquement |
+| `path-kebab-case` | error | Paths en kebab-case, paramètres en {camelCase} |
 | `operation-id-camel-case` | error | operationId en camelCase |
-| `must-document-pagination` | warn | GET collection → documenter page/size |
-
+| `operation-4xx-response` | error | Au moins une réponse 4xx par opération |
+| `list-endpoints-paginated` | error | GET collection → paramètres page et size |
+| `page-size-max-100` | error | size plafonné à 100 |
+| `errors-problem-json` | error | Erreurs en application/problem+json |
+| `post-returns-201` / `delete-returns-204` | warn | Codes de succès REST |
 ## Workflow recommandé
 
 1. Modifier `openapi/*.yaml`
