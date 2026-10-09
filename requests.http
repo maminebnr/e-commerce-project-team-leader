@@ -1,0 +1,68 @@
+### ============================================
+### API Training E-commerce — Requêtes de test
+### Port : 8088  |  Extension : REST Client
+### ============================================
+
+@base = http://localhost:8088
+
+### 1. Liste paginée des produits
+GET {{base}}/products?page=0&size=5
+
+### 2. Recherche textuelle
+GET {{base}}/products?q=iphone
+
+### 3. Filtrer par catégorie
+GET {{base}}/products?categoryId=1
+
+### 4. Filtrer par prix
+GET {{base}}/products?minPrice=500&maxPrice=1500
+
+### 5. Tri par prix décroissant
+GET {{base}}/products?sort=price,desc&size=10
+
+### 6. Détail d'un produit
+GET {{base}}/products/1
+
+### 7. Produit inexistant (404)
+GET {{base}}/products/99999
+
+### 8. Créer un produit (201)
+POST {{base}}/products
+Content-Type: application/json
+
+{
+  "name": "Pixel 9 Pro",
+  "price": 999.00,
+  "categoryId": 1,
+  "description": "Google flagship 128 Go"
+}
+
+### 9. Validation échouée — nom vide (400)
+POST {{base}}/products
+Content-Type: application/json
+
+{
+  "name": "",
+  "price": -10,
+  "categoryId": 1
+}
+
+### 10. Mettre à jour un produit
+PUT {{base}}/products/1
+Content-Type: application/json
+
+{
+  "name": "iPhone 16 Pro Max",
+  "price": 1479.00,
+  "categoryId": 1,
+  "description": "Version Max 512 Go"
+}
+
+### 11. Supprimer un produit (204)
+DELETE {{base}}/products/5
+
+### 12. OpenAPI JSON
+GET {{base}}/v3/api-docs
+
+### 13. Swagger UI (ouvrir dans le navigateur)
+# http://localhost:8088/swagger-ui.html

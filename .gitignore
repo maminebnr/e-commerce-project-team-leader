@@ -8,7 +8,12 @@ target/
 *.iml
 *.ipr
 *.iws
-.vscode/
+# .vscode/  (config équipe versionnée)
+!.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
 *.swp
 *~
 

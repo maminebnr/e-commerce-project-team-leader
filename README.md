@@ -67,3 +67,4 @@ Le workflow GitHub Actions (`.github/workflows/spectral.yml`) bloque la PR si Sp
 
 Med Amine Ben Rhouma — Clevory Training  
 contact@clevory.tn
+# e-commerce-project-team-leader

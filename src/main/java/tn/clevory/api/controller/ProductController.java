@@ -22,6 +22,8 @@ import tn.clevory.api.dto.ProductDto;
 import tn.clevory.api.dto.ProductPageDto;
 import tn.clevory.api.service.ProductService;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping("/products")
 @Tag(name = "Products", description = "Opérations sur les produits")
@@ -43,6 +45,7 @@ public class ProductController {
                     schema = @Schema(type = "integer", minimum = "1", maximum = "100",
                             defaultValue = "20"))
     })
+
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Page de produits"),
             @ApiResponse(responseCode = "400", description = "Paramètres invalides",
@@ -50,8 +53,10 @@ public class ProductController {
                             schema = @Schema(implementation = ProblemDetail.class)))
     })
     public ProductPageDto list(
+
             @ParameterObject @PageableDefault(size = 20) Pageable pageable) {
         return service.list(pageable);
+
     }
 
     @GetMapping("/{id}")
