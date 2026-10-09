@@ -67,6 +67,7 @@ paths:
       tags: [Products]
       operationId: createProduct
       summary: Créer un produit
+      description: Crée un nouveau produit et retourne le produit créé avec son identifiant.
       requestBody:
         required: true
         content:
@@ -100,6 +101,7 @@ paths:
       tags: [Products]
       operationId: getProduct
       summary: Détail d'un produit
+      description: Retourne le détail d'un produit par son identifiant.
       parameters:
         - name: id
           in: path
@@ -125,6 +127,7 @@ paths:
       tags: [Products]
       operationId: updateProduct
       summary: Mettre à jour un produit (remplacement complet)
+      description: Met à jour les informations d'un produit existant et retourne le produit mis à jour.
       parameters:
         - name: id
           in: path
@@ -155,6 +158,7 @@ paths:
       tags: [Products]
       operationId: deleteProduct
       summary: Supprimer un produit
+      description: Supprime un produit par son identifiant.
       parameters:
         - name: id
           in: path
@@ -218,7 +222,8 @@ components:
         price:
           type: number
           format: double
-          exclusiveMinimum: 0
+          exclusiveMinimum: false
+          minimum: 0
           example: 1229.00
         categoryId:
           type: integer
@@ -268,5 +273,5 @@ components:
           example: Product with id 42 not found
         instance:
           type: string
-          format: uri
-          example: /products/42
+          format: uri-reference
+          example: products/42

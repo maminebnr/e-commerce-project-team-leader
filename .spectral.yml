@@ -1,43 +1,125 @@
 # Règles Spectral — équipe Clevory (day1/spectral-rules)
 # CI bloque la PR si severity = error
-
 extends:
-  - spectral:oas
+  - ["spectral:oas", "recommended"]
 
 rules:
   # ========== ERREURS BLOQUANTES ==========
   operation-operationId: error
   operation-operationId-unique: error
   path-params: error
-  no-\$ref-siblings: error
+  no-$ref-siblings: error
   oas3-schema: error
   operation-success-response: error
   operation-operationId-valid-in-url: error
+  operation-tag-defined: error
+  info-contact: error
+  oas3-valid-media-example: error
+  oas3-valid-schema-example: error
 
   # Paths doivent être en kebab-case
   path-kebab-case:
     description: Les segments de path doivent être en kebab-case
+    message: "Path {{property}} : segments en kebab-case, paramètres en {camelCase}"
     severity: error
-    given: "\$.paths[*]~"
+    given: "$.paths[*]~"
     then:
       function: pattern
       functionOptions:
-        match: "^(\\/([a-z0-9\\-]+|{[a-zA-Z0-9]+}))+\$"
+        match: "^(/([a-z0-9]+(-[a-z0-9]+)*|\\{[a-z][a-zA-Z0-9]*\\}))+$"
 
   # operationId en camelCase
   operation-id-camel-case:
     description: operationId doit être en camelCase
+    message: "operationId {{value}} doit être en camelCase (ex. listProducts)"
     severity: error
-    given: "\$.paths[*][get,post,put,patch,delete].operationId"
+    given: "$.paths[*][get,post,put,patch,delete].operationId"
     then:
-      function: pattern
+      function: casing
       functionOptions:
-        match: "^[a-z][a-zA-Z0-9]*\$"
+        type: camel
 
   # ========== WARNINGS ==========
   operation-description: warn
-  operation-tag-defined: warn
-  info-contact: warn
   info-description: warn
-  oas3-valid-media-example: warn
   tag-description: off
+
+  # ========== SÉMANTIQUE HTTP & PAGINATION ==========
+  post-returns-201:
+    description: Un POST de création renvoie 201 Created (ResponseEntity.status(CREATED)).
+    message: "POST sans réponse 201 : une création doit renvoyer 201"
+    severity: warn
+    given: "$.paths[*].post.responses"
+    then:
+      field: "201"
+      function: truthy
+
+  delete-returns-204:
+    description: Un DELETE réussi renvoie 204 (ResponseEntity.noContent()).
+    message: "DELETE sans réponse 204"
+    severity: warn
+    given: "$.paths[*].delete.responses"
+    then:
+      field: "204"
+      function: truthy
+
+  operation-4xx-response:
+    description: Chaque opération documente au moins une erreur 4xx.
+    message: "Aucune réponse 4xx documentée (ajouter 400 ou 404)"
+    severity: error
+    given: "$.paths[*][get,post,put,patch,delete].responses"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          not:
+            propertyNames:
+              not:
+                pattern: "^4"
+
+  list-endpoints-paginated:
+    description: Un GET sur une collection expose page et size (Pageable Spring Data).
+    message: "Collection sans pagination : déclarer les paramètres page et size"
+    severity: error
+    given: "$.paths[?(!@property.endsWith('}'))].get"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          required:
+            - parameters
+          properties:
+            parameters:
+              allOf:
+                - contains:
+                    type: object
+                    required:
+                      - name
+                    properties:
+                      name:
+                        const: page
+                - contains:
+                    type: object
+                    required:
+                      - name
+                    properties:
+                      name:
+                        const: size
+
+  page-size-max-100:
+    description: size est plafonné à 100 (spring.data.web.pageable.max-page-size).
+    message: "Le paramètre size doit déclarer maximum <= 100"
+    severity: error
+    given: "$.paths[*].get.parameters[?(@.name == 'size')].schema"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          required:
+            - maximum
+          properties:
+            maximum:
+              type: integer
+              maximum: 100
